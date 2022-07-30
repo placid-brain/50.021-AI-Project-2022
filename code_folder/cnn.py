@@ -24,6 +24,7 @@ tokenizer = BertTokenizer.from_pretrained(PRE_TRAINED_MODEL_NAME)
 device = torch.device("cpu")
 
 
+
 class RtwtDataset(Dataset):
     def __init__(self, content, retweet, tokenizer, max_len):
         self.content = content
@@ -53,11 +54,11 @@ class RtwtDataset(Dataset):
         'text_content': content,
         'input_ids': encoding['input_ids'].flatten(),
         'attention_mask': encoding['attention_mask'].flatten(),
-        'retweet': torch.tensor(retweet, dtype=torch.long)
+        'retweet': torch.tensor(retweet, dtype=torch.float)
         }
 
-df_x = pd.read_csv("/content/drive/MyDrive/50.021-AI-Project-2022/datasets/working_dataset/tweet_content_only/train/X_train.csv",nrows=100)
-df_y = pd.read_csv("/content/drive/MyDrive/50.021-AI-Project-2022/datasets/working_dataset/tweet_content_only/train/y_train.csv",nrows=100)
+df_x = pd.read_csv("/content/drive/MyDrive/50.021-AI-Project-2022/datasets/working_dataset/tweet_content_only/train/X_train.csv")
+df_y = pd.read_csv("/content/drive/MyDrive/50.021-AI-Project-2022/datasets/working_dataset/tweet_content_only/train/y_train.csv")
 df_train = pd.concat([df_x,df_y], axis=1)
  
 #df_train, df_test = train_test_split(df, test_size=0.1, )
@@ -105,43 +106,7 @@ class Predictor(nn.Module):
     
   
   def forward(self, input_ids, attention_mask):
-    '''hidden_state, pooled_output = self.bert(
-      input_ids=input_ids,
-      attention_mask=attention_mask
-    )'''
-    '''output = self.conv1(pooled_output)
-    output = self.pooling(self.relu(output))
-    final_output = self.fc1(output)'''
-
-
-    '''x = torch.transpose(pooled_output, 1, 2) # (batch, 1, 300)
-    x = torch.unsqueeze(x, 1) # (batch, 1, 300, 1)
-    x = self.conv(x) # (batch, 64, 150, 1)
-    x = self.maxpool(x) # (batch, 64, 75, 1) 
-    F.relu(x) # non-linear function to activate the neurons
-    x = x.flatten(start_dim=1) # (batch, 4800)
-    final_output = self.linear(x)
-
-    return final_output'''
-
-    #print(hidden_state)
-    #print(hidden_state.shape)
-
-    '''print(self.bert(
-      input_ids=input_ids,
-      attention_mask=attention_mask
-    )[0])
-    print('-'*30)
-    print(self.bert(
-      input_ids=input_ids,
-      attention_mask=attention_mask
-    )[1])
-
-    print('-'*30)
-    print(self.bert(
-      input_ids=input_ids,
-      attention_mask=attention_mask
-    ).shape)'''
+    
 
 
     
@@ -153,17 +118,24 @@ class Predictor(nn.Module):
       attention_mask=attention_mask
     )[0]
     hs = hidden_state.permute(0,2,1)
+
+    print('hs shape', hs.size())
     
     conved = F.relu(self.conv(hs))
         
     #conved_n = [batch size, n_filters, sent len - filter_sizes[n] + 1]
             
     pooled = F.max_pool1d(conved,1)
-    
+    print('pooled size',pooled.size())
     
     #pooled_n = [batch size, n_filters]
-    
-    output = self.fc(pooled.view(-1,100))
+    #print('pooled view', pooled.view(-1,100).size())
+    #output = self.fc(pooled.view(-1,100))
+    pool_permute = pooled.permute(0, 1, 2)[:, :, -1]
+    #print(pool_permute.size())
+    output = self.fc(pool_permute)
+    #output = self.fc(output)
+    print('output size', output.size())
     
         
     return output
@@ -210,12 +182,23 @@ def train_epoch(
       input_ids=input_ids,
       attention_mask=attention_mask
     )
-
-    _, preds = torch.max(outputs, dim=1)
+    print(outputs)
+    print(outputs.size())
+    holder, preds = torch.max(outputs, dim=1)
+    print('torch max',torch.max(outputs, dim=1))
+    print('holder',holder)
+    print('preds',preds)
+    print('first',torch.max(outputs, dim=1)[0])
+    retweet = retweet.view(holder.size()[0],-1)
+    print('retweet SIZE', retweet.size())
     loss = F.mse_loss(outputs, retweet).to(device)
     #loss = loss.to(device)
 
-    correct_predictions += torch.sum(preds == retweet)
+    print('preds',preds)
+    print('pred size', preds.size())
+    print('retweet',retweet)
+    print('retweet size',retweet.size())
+    correct_predictions += torch.sum(holder == retweet)
     losses.append(loss.item())
 
     loss.backward()
@@ -224,7 +207,7 @@ def train_epoch(
     scheduler.step()
     optimizer.zero_grad()
 
-  return correct_predictions.double() / n_examples, np.mean(losses)
+  return correct_predictions.float() / n_examples, np.mean(losses)
 
 
 for epoch in range(EPOCHS):
