@@ -198,7 +198,7 @@ def train_epoch(
     print('pred size', preds.size())
     print('retweet',retweet)
     print('retweet size',retweet.size())
-    correct_predictions += torch.sum(holder == retweet)
+    correct_predictions += torch.sum(preds == retweet)
     losses.append(loss.item())
 
     loss.backward()
@@ -207,7 +207,7 @@ def train_epoch(
     scheduler.step()
     optimizer.zero_grad()
 
-  return correct_predictions.float() / n_examples, np.mean(losses)
+  return  np.mean(losses)
 
 
 for epoch in range(EPOCHS):
