@@ -8,6 +8,10 @@ from sklearn.model_selection import train_test_split
 import pickle
 from sklearn.preprocessing import MinMaxScaler
 import matplotlib.dates as mdates
+import nltk
+
+# Download the lexicon
+nltk.download("vader_lexicon")
 
 
 import pandas as pd
@@ -27,6 +31,8 @@ from sklearn.svm import SVR
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.model_selection import GridSearchCV
 import torch.nn as nn
+
+#import wordprocessingtools
 
 
 
@@ -181,14 +187,14 @@ class StreamlitApp:
 
         st.title("Retweet Prediction")
 
-        text=st.text_area("Input Tweet Content")
+        text=st.text_area(label="Input Tweet Content (max. 280 chars)",max_chars=280)
         sia = SentimentIntensityAnalyzer()
         sentiment_class=sia.polarity_scores(text)['compound']
         st.write("Vader Sentiment Compound:",sentiment_class)
 
         #sentiment_class = st.number_input(label="Input Sentiment Class (i.e. 0 for negative, 1 for neutral, 2 for positive)",min_value=0,max_value=2)
         retweet_status= st.number_input(label="Input Retweet Status (i.e. 0 for un-retweeted, 1 for retweeted)", min_value=0,max_value=1)
-        day = st.number_input(label="Input Day of Post (i.e. 0-6 for Mon to Sunday)",min_value=0,max_value=6)
+        day = st.number_input(label="Input Day of Post (i.e. 0-6 for Mon to Sun)",min_value=0,max_value=6)
         hour = st.number_input(label="Input Hour of Post (i.e. 0-23)",min_value=0,max_value=23)
         #author_class = st.number_input(label="author class",min_value=0)
         #text=len(st.text_area("Enter Tweet Content").split())
@@ -212,8 +218,7 @@ class StreamlitApp:
         #st.write("Predicted no. of retweets:",self.model.predict(np.array([date_conv,int(fav),dir_sent]).reshape(1,-1))) #to run input with the model
         input=np.array([sentiment_class,retweet_status,day,hour])
         prediction=self.model(torch.from_numpy(input.astype(np.float32))).item()
-        
-        st.metric("Predicted No. of Retweets:",int(prediction))
+        st.metric(label="**Predicted No. of Retweets**",value=int(prediction))
         return self
 
 
