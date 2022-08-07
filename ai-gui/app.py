@@ -137,7 +137,7 @@ class DNNRegressor(nn.Module):
 class StreamlitApp:
 
     def __init__(self):
-        with open('final_pickle_ver_6' , 'rb') as f:
+        with open('final_pickle_ver_7' , 'rb') as f:
             model = pickle.load(f)
         self.model= model
         #self.model = RandomForestClassifier() # replace with our model
@@ -181,8 +181,12 @@ class StreamlitApp:
 
         st.title("Retweet Prediction")
 
+        text=st.text_area("Input Tweet Content")
+        sia = SentimentIntensityAnalyzer()
+        sentiment_class=sia.polarity_scores(text)['compound']
+        st.write("Vader Sentiment Compound:",sentiment_class)
 
-        sentiment_class = st.number_input(label="Input Sentiment Class (i.e. 0 for negative, 1 for neutral, 2 for positive)",min_value=0,max_value=2)
+        #sentiment_class = st.number_input(label="Input Sentiment Class (i.e. 0 for negative, 1 for neutral, 2 for positive)",min_value=0,max_value=2)
         retweet_status= st.number_input(label="Input Retweet Status (i.e. 0 for un-retweeted, 1 for retweeted)", min_value=0,max_value=1)
         day = st.number_input(label="Input Day of Post (i.e. 0-6 for Mon to Sunday)",min_value=0,max_value=6)
         hour = st.number_input(label="Input Hour of Post (i.e. 0-23)",min_value=0,max_value=23)
@@ -192,7 +196,6 @@ class StreamlitApp:
 
         #scaler=MinMaxScaler()
 
-        #text=st.text_area("Input Tweet Content")
         #date=st.text_area("Input Date")
         #fav=st.number_input("Input Fvaorite Count")
         #dir_sent=st.number_input("Input sentiment value")
@@ -200,11 +203,8 @@ class StreamlitApp:
         #data={'date':[date]}
         #date_conv=pd.to_datetime(data["date"])
         #date_conv = date_conv.map(mdates.date2num)[0]
-        #sia = SentimentIntensityAnalyzer()
-        #sent=sia.polarity_scores(text)['compound']
-
         
-        #st.write(sent)
+
 
         #x_scale=scaler.fit_transform(np.array([date_conv,int(fav),sent])).reshape(1,-1)
         #st.write(x_scale)
@@ -213,7 +213,7 @@ class StreamlitApp:
         input=np.array([sentiment_class,retweet_status,day,hour])
         prediction=self.model(torch.from_numpy(input.astype(np.float32))).item()
         
-        st.write("Output:",int(prediction))
+        st.metric("Predicted No. of Retweets:",int(prediction))
         return self
 
 
